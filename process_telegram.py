@@ -1,5 +1,7 @@
 import glob
 from bs4 import BeautifulSoup
+import csv
+import re
 
 files_sorted = sorted(glob.iglob('data/**/*.html'))
 
@@ -13,6 +15,9 @@ for filename in files_sorted:
         name = None
         date = None
         text = None
+
+        non_alpha = re.compile(r'[^A-Za-zА-Яа-я\s\-\d]')
+
         for message in messages:
             name_div = message.find('div', {'class': 'from_name'})
             date_div = message.find('div', {'class': 'date'})
@@ -22,9 +27,13 @@ for filename in files_sorted:
             if date_div:
                 date = date_div['title']
             if text_div:
-                text = text_div.text.strip().lower()
+                text = non_alpha.sub('', text_div.text.strip()).lower()
 
-            if text:
-                message_data_set.append((name, date, text, text.split(' ')))
+            if name and date and text:
+                message_data_set.append((name, date, text))
 
 # print(message_data_set)
+print('Writing message data set to csv...')
+with open('output/messages.csv', 'w') as csv_file:
+    writer = csv.writer(csv_file, delimiter='\t')
+    writer.writerows(message_data_set)
